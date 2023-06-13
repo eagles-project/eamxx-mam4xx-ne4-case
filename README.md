@@ -37,7 +37,8 @@ Here's what all the symbols mean:
 These commands download any needed simulation data and then run the case:
 
 ```
-./create_nuc_case`
+./create_nuc_case
+cd F2010-SCREAMv1.ne4pg2_ne4pg2.1x16.mam4xx_nuc
 ./case.submit --no-batch
 ```
 
