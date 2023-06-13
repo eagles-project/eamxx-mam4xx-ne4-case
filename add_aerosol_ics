@@ -1,0 +1,95 @@
+#!/usr/bin/env python3
+
+# This script adds aerosol tracers and prescribes wind velocities for a
+# Cosine Bell problem that demonstrates aerosol nucleation on a global
+# cubed-sphere grid within the given file.
+
+import argparse, sys
+import netCDF4 as nc
+from math import pi, sqrt, cos, sin, atan2, nan
+from shutil import copyfile
+
+#------------
+# parameters
+#------------
+
+def usage():
+    print("%s: usage:\n%s <input-nc-file> <output-nc-file>")
+    exit(1)
+
+# cross product in cartesian coordinates
+def cross(x, y):
+    return (x[1]*y[2] - x[2]*y[1],
+            x[2]*y[0] - x[0]*y[2],
+            x[0]*y[1] - x[1]*y[0])
+
+# magnitude of a vector in cartesian coordinates
+def magnitude(x):
+    return sqrt(x[0]*x[0] + x[1]*x[1] + x[2]*x[2])
+
+# dot product in cartesian coordinates
+def dot(x, y):
+    return x[0]*y[0] + x[1]*y[1] + x[2]*y[2]
+
+def cosine_bell(lat, lon):
+    lat0, lon0 = 0, 5 * pi / 6 # lat, lon of signal center
+    hmax = 1 # maximum signal height
+    R = 0.5 # characteristic radius of signal
+
+    # find the distance r from the center of the signal to our point
+    # (via cartesian coordinates)
+    center = (cos(lon0) * cos(lat0), sin(lon0) * cos(lat0), sin(lat0))
+    x = (cos(lon) * cos(lat), sin(lon) * cos(lat), sin(lat))
+    r = atan2(magnitude(cross(x, center)), dot(x, center))
+
+    return 0.5 * hmax * (1 + cos(pi * r/R))
+
+# computes horizontal wind velocities at the given latitude/longitude
+def cosine_bell_winds(lat, lon):
+    u0 = 2 * pi / 5 # wind velocity magnitude
+    alpha = 0       # angle between solid body rotation and polar axis
+    u =  u0 * (cos(lat) * cos(alpha) + sin(lat) * cos(lon) * sin(alpha))
+    v = -u0 * sin(lon) * sin(alpha)
+    return u, v
+
+def copy_data(src, dest):
+    # dimensions
+    for dname, the_dim in src.dimensions.iteritems():
+        dest.createDimension(dname, len(the_dim) if not the_dim.isunlimited() else None)
+
+    # variables
+    for v_name, varin in src.variables.iteritems():
+        outv = dest.createVariable(v_name, varin.datatype, varin.dimensions)
+
+        # attributes
+        outv.setncatts({k: varin.getncattr(k) for k in varin.ncattrs()})
+        outv[:] = varin[:]
+
+if __name__ == '__main__':
+    if len(sys.argv) < 3:
+        usage()
+    input_file, output_file = sys.argv[1], sys.argv[2]
+    copyfile(input_file, output_file)
+
+    ds = nc.Dataset(output_file, 'a')
+
+    datatype = 'float64'
+    dims = ('time', 'ncol', 'lev')
+    q_h2so4 = ds.createVariable('q_q_h2so4', datatype, dims, fill_value=nan)
+    q_aitken_so4 = ds.createVariable('q_aitken_so4', datatype, dims, fill_value=nan)
+    n_aitken_so4 = ds.createVariable('n_aitken_so4', datatype, dims, fill_value=nan)
+    q_h2so4.setncatts({'mdims': 1, 'units': 'kg/kg', 'long_name': 'H2SO4 gas mass mixing ratio'})
+    q_aitken_so4.setncatts({'mdims': 1, 'units': 'kg/kg', 'long_name': 'SO4 aerosol mass mixing ratio'})
+    n_aitken_so4.setncatts({'mdims': 1, 'units': '1/kg', 'long_name': 'SO4 aerosol number mixing ratio'})
+    horiz_winds = ds['horiz_winds']
+    lat, lon = ds['lat'], ds['lon']
+
+    q_aitken_so4[:] = 0
+    n_aitken_so4[:] = 0
+    ncol = q_h2so4.shape[1]
+    for icol in range(ncol):
+        q_h2so4[0,icol,:] = cosine_bell(lat[icol], lon[icol])
+        u, v = cosine_bell_winds(lat[icol], lon[icol])
+        horiz_winds[0,icol,0,:] = u
+        horiz_winds[0,icol,1,:] = v
+    ds.close()
