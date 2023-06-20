@@ -63,6 +63,9 @@ NEW_IC_FILE=${PWD}/screami_ne4np4L72_20220823_aero.nc
 
 ../add_aerosol_ics ${ORIG_IC_FILE} ${NEW_IC_FILE}
 ./atmchange initial_conditions::Filename=${NEW_IC_FILE}
+./atmchange atmosphere_processes::physics::atm_procs_list=(mam4_micro)
+# change mam4_micro configuration here, e.g.:
+# ./atmchange atmosphere_processes::physics::mam4_micro::widget=1
 
 # write a CMake file to point to NetCDF libraries and set some compiler flags
 cat <<EOF > cmake_macros/gnu_${MACHINE}.cmake
