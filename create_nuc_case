@@ -63,7 +63,7 @@ NEW_IC_FILE=${PWD}/screami_ne4np4L72_20220823_aero.nc
 
 ../add_aerosol_ics ${ORIG_IC_FILE} ${NEW_IC_FILE}
 ./atmchange initial_conditions::Filename=${NEW_IC_FILE}
-./atmchange atmosphere_processes::physics::atm_procs_list=(mam4_micro)
+./atmchange atmosphere_processes::physics::mac_aero_mic::atm_procs_list="\(shoc,cldFraction,mam4_micro,p3\)"
 # change mam4_micro configuration here, e.g.:
 # ./atmchange atmosphere_processes::physics::mam4_micro::widget=1
 
