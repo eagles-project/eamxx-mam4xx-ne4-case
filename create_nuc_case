@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -e # terminate on any failed command
+
 # This script configures a case to demonstrate the integration of mam4xx with
 # eamxx. It's associated with the following GitHub issue:
 # https://github.com/eagles-project/mam4xx/issues/169
@@ -13,7 +15,7 @@ SCREAM_INPUT_ROOT=~/projects/sandia/scream-input/
 MACHINE=trippy
 COMPSET=F2010-SCREAMv1
 RES=ne4pg2_ne4pg2
-PECOUNT=1x16
+PECOUNT=1x64
 CASE_NAME=${COMPSET}.${RES}.${PECOUNT}.mam4xx_nuc
 
 # -----------------
@@ -29,11 +31,14 @@ ${SCREAM_ROOT}/cime/scripts/create_newcase \
   --pecount ${PECOUNT} \
   --res ${RES}
 
-# ---------------------
-#  Simulation Settings
-# ---------------------
+# --------------------
+#  Case Configuration
+# --------------------
 
 cd ${CASE_NAME}
+
+# set up the case to generate files
+./case.setup
 
 # change CIME settings to reflect our particular simulation
 # (see https://acme-climate.atlassian.net/wiki/spaces/NGDNA/pages/3386015745/How+To+Run+SCREAMv1
@@ -49,23 +54,25 @@ cd ${CASE_NAME}
 #  SCREAM_NUM_TRACERS - the number of atmospheric tracers (usually 10, more with aerosols)
 ./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_ENABLE_MAM ON SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10"
 
-# --------------------
-#  Case Configuration
-# --------------------
-
-# set up the case
-./case.setup
-
 # set initial conditions for H2SO4 gas, aerosol tracers, and wind velocities
+echo "Adding aerosol ICs..."
 INPUTDATA_DIR=../e3sm-inputdata/atm/scream/init/
 ORIG_IC_FILE=${INPUTDATA_DIR}/screami_ne4np4L72_20220823.nc
 NEW_IC_FILE=${PWD}/screami_ne4np4L72_20220823_aero.nc
-
 ../add_aerosol_ics ${ORIG_IC_FILE} ${NEW_IC_FILE}
+
+./atmchange atmosphere_dag_verbosity_level=4
+
+echo "Setting IC file to ${NEW_IC_FILE}."
 ./atmchange initial_conditions::Filename=${NEW_IC_FILE}
-./atmchange atmosphere_processes::physics::mac_aero_mic::atm_procs_list="\(shoc,cldFraction,mam4_micro,p3\)"
-# change mam4_micro configuration here, e.g.:
-# ./atmchange atmosphere_processes::physics::mam4_micro::widget=1
+
+echo "Setting mac_aero_mic process list."
+./atmchange atmosphere_processes::physics::mac_aero_mic::atm_procs_list='(shoc,cldFraction,mam4microphysics,p3)' --all
+
+# Copy the default output file in from SCREAM and modify it
+echo "Setting output YAML file."
+cp ${SCREAM_ROOT}/components/eamxx/data/scream_default_output.yaml scream_output.yaml
+./atmchange Scorpio::output_yaml_files=${PWD}/scream_output.yaml
 
 # write a CMake file to point to NetCDF libraries and set some compiler flags
 cat <<EOF > cmake_macros/gnu_${MACHINE}.cmake
@@ -90,6 +97,9 @@ common_setup()
 set(SCREAM_INPUT_ROOT "${SCREAM_INPUT_ROOT}" CACHE STRING "")
 EOF
 
+# run case.setup again to make sure the atmchange stuff takes
+./case.setup
+
 # show the case configuration
 ./preview_run
 
@@ -101,3 +111,7 @@ EOF
 
 # change out of the case directory
 cd ..
+
+echo "To run the case:"
+echo "cd ${CASE_NAME}"
+echo "./case.submit --no-batch"
