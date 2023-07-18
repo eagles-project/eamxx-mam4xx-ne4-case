@@ -52,7 +52,7 @@ cd ${CASE_NAME}
 #  SCREAM_NP - the number of GLL points per side of an element (always 4)
 #  SCREAM_NUM_VERTICAL_LEV - the number of vertical levels (usually 72 or 128)
 #  SCREAM_NUM_TRACERS - the number of atmospheric tracers (usually 10, more with aerosols)
-./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_ENABLE_MAM ON SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 10"
+./xmlchange SCREAM_CMAKE_OPTIONS="SCREAM_ENABLE_MAM ON SCREAM_NP 4 SCREAM_NUM_VERTICAL_LEV 72 SCREAM_NUM_TRACERS 13"
 
 # set initial conditions for H2SO4 gas, aerosol tracers, and wind velocities
 echo "Adding aerosol ICs..."
