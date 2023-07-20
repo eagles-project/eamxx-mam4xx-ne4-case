@@ -67,7 +67,7 @@ echo "Setting IC file to ${NEW_IC_FILE}."
 ./atmchange initial_conditions::Filename=${NEW_IC_FILE}
 
 echo "Setting mac_aero_mic process list."
-./atmchange atmosphere_processes::physics::mac_aero_mic::atm_procs_list='(shoc,cldFraction,mam4microphysics,p3)' --all
+./atmchange atmosphere_processes::physics::mac_aero_mic::atm_procs_list='(shoc,cldFraction,mam4microphysics,mam4optics,p3)' --all
 
 # Copy the default output file in from SCREAM and modify it
 echo "Setting output YAML file."
