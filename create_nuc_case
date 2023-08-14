@@ -8,9 +8,9 @@
 #  Case Parameters
 # -----------------
 
-SCREAM_ROOT=~/projects/sandia/scream/
-SCREAM_INPUT_ROOT=~/projects/sandia/scream-input/
-MACHINE=trippy
+SCREAM_ROOT=~/scream-mam4
+SCREAM_INPUT_ROOT=~/scream_data
+MACHINE=s1024454
 COMPSET=F2010-SCREAMv1
 RES=ne4pg2_ne4pg2
 PECOUNT=1x16
@@ -57,7 +57,7 @@ cd ${CASE_NAME}
 ./case.setup
 
 # set initial conditions for H2SO4 gas, aerosol tracers, and wind velocities
-INPUTDATA_DIR=../e3sm-inputdata/atm/scream/init/
+INPUTDATA_DIR=~/scream_data/atm/scream/init/
 ORIG_IC_FILE=${INPUTDATA_DIR}/screami_ne4np4L72_20220823.nc
 NEW_IC_FILE=${PWD}/screami_ne4np4L72_20220823_aero.nc
 
